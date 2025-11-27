@@ -26,7 +26,7 @@ func main() {
 
 	conn, err := tls.Dial("tcp", IP_SERVER, tlsConfig)
 	if err != nil {
-		log.Println("error al realizar el handshake", err) 
+		log.Println("Error al realizar el handshake: ", err) 
 	}
 	handleConn(conn)
 }
