@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
 	"log"
 	"net"
@@ -34,7 +35,14 @@ func main() {
 	telegramTokenId = os.Getenv("TOKEN_ID")
 	telegramChatId = os.Getenv("CHAT_ID")
 	
-	listener, err := net.Listen("tcp", "0.0.0.0:4466")
+	cert, err := tls.LoadX509KeyPair("server.crt", "server.key")
+	if err != nil {
+		log.Println(err)
+	}
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+	}
+	listener, err := tls.Listen("tcp", "0.0.0.0:4466", tlsConfig)
 	if err != nil {
 		log.Println(err)
 	}

@@ -1,4 +1,7 @@
 ## .env ##
 .env
 
+## certs and keys ##
+*.key
+*.crt
 

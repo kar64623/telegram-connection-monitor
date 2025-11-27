@@ -5,7 +5,8 @@ import (
 	"net"
 	"os"
 	"strings"
-	
+	"crypto/tls"
+
 	"github.com/joho/godotenv"
 
 
@@ -18,10 +19,14 @@ func main() {
 	}
 
 	IP_SERVER := os.Getenv("IP_SERVER")
+                
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: true, 
+	}
 
-	conn, err := net.Dial("tcp", IP_SERVER)
+	conn, err := tls.Dial("tcp", IP_SERVER, tlsConfig)
 	if err != nil {
-		log.Println(err)
+		log.Println("error al realizar el handshake", err) 
 	}
 	handleConn(conn)
 }
