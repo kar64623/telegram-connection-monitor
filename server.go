@@ -69,12 +69,12 @@ func registerConn(conn net.Conn) {
 func getHostname(conn net.Conn) string {
 	_, err := conn.Write([]byte(fmt.Sprintf("Hostname")))
 	if err != nil {
-		log.Println("error al enviar comando", err)
+		log.Println("Error al enviar comando: ", err)
 	}
 	bufRespuesta := make([]byte, 1024)
 	n, err := conn.Read(bufRespuesta)
 	if err != nil {
-		log.Println("Error al leer respuesta", err)
+		log.Println("Error al leer respuesta: ", err)
 	}
 	hostname := strings.TrimSpace(string(bufRespuesta[:n]))
 	return hostname
