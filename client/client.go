@@ -1,15 +1,14 @@
 package main
 
 import (
+	"crypto/tls"
+	"fmt"
 	"log"
 	"net"
 	"os"
 	"strings"
-	"crypto/tls"
 
 	"github.com/joho/godotenv"
-
-
 )
 
 func main() {
@@ -47,7 +46,29 @@ func handleConn(conn net.Conn) {
 		if err != nil {
 			log.Println(err)
 		}
+		startMonitor(conn)
 	} else {
 		log.Println("Error, comando no reconocido")
+	}
+}
+
+func startMonitor(conn net.Conn) {
+	//defer conn.Close() 
+	for {
+		bufRespuesta:= make([]byte, 1024)
+		n, err := conn.Read(bufRespuesta)
+		if err != nil {
+			return
+		}
+		respuesta:=strings.TrimSpace(string(bufRespuesta[:n])) 
+		if respuesta != "PING" {
+			fmt.Printf("%s", respuesta)
+			return 
+		} else {
+			_, err := conn.Write([]byte(fmt.Sprintf("PONG")))
+			if err != nil {
+				return 
+			}
+		}
 	}
 }

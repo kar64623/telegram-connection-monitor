@@ -15,7 +15,6 @@ import (
 )
 
 
-
 type clientInfo struct {
 	date 	string 
 	host 	string 
@@ -35,7 +34,8 @@ func main() {
 	telegramTokenId = os.Getenv("TOKEN_ID")
 	telegramChatId = os.Getenv("CHAT_ID")
 	
-	cert, err := tls.LoadX509KeyPair("server.crt", "server.key")
+
+	cert, err := tls.LoadX509KeyPair("/etc/activeAgents/server.crt", "/etc/activeAgents/server.key")
 	if err != nil {
 		log.Println(err)
 	}
@@ -52,6 +52,7 @@ func main() {
 		if err != nil {
 			log.Println(err)
 		}
+		
 		go registerConn(conn)
 	}
 }
@@ -63,8 +64,35 @@ func registerConn(conn net.Conn) {
 		ip: conn.RemoteAddr().String(),
 	}
 	fmt.Printf("Client Connected:\n\t%s\n\t%s\n\t%s\n", clientInfo.date, clientInfo.host, clientInfo.ip)
-	sendInfo(clientInfo)
+	
+	sendInfo(clientInfo, "Connected")
+	monitorClient(conn, clientInfo)
 }
+
+func monitorClient(conn net.Conn, cI clientInfo) {
+	defer conn.Close()
+	for {
+		time.Sleep(5 * time.Second)
+		_, err := conn.Write([]byte(fmt.Sprintf("PING")))
+		if err != nil {
+			log.Println("Error al enviar PING", err)
+			break 
+		}
+		bufRespuesta := make([]byte, 1024)
+		n, err := conn.Read(bufRespuesta)
+		if err != nil {
+			log.Println("Error al leer respuesta", err)
+			break
+		}
+		respuesta:=strings.TrimSpace(string(bufRespuesta[:n])) 
+		if respuesta != "PONG" {
+			log.Println("No es la respuesta")
+			break 
+		}
+	}
+	sendInfo(cI, "Disconnected")
+}
+
 
 func getHostname(conn net.Conn) string {
 	_, err := conn.Write([]byte(fmt.Sprintf("Hostname")))
@@ -80,7 +108,7 @@ func getHostname(conn net.Conn) string {
 	return hostname
 }
 
-func sendInfo(cI clientInfo) {
+func sendInfo(cI clientInfo, state string) {
 	bot, err := tgbotapi.NewBotAPI(telegramTokenId)
 	if err != nil {
 		log.Println(err)
@@ -89,8 +117,15 @@ func sendInfo(cI clientInfo) {
 	if err != nil {
 		log.Println(err)
 	}
-
-	msg := fmt.Sprintf("\nClient Connected:\n\tDate: %s \n\tHostname: %s \n\tIp: %s", cI.date, cI.host, cI.ip)
-	sendMsg := tgbotapi.NewMessage(telegramChatId, msg)
-	bot.Send(sendMsg)
+	switch state {
+	case "Connected":
+		msg := fmt.Sprintf("\nClient Connected:\n\tDate: %s \n\tHostname: %s \n\tIp: %s", cI.date, cI.host, cI.ip)
+		sendMsg := tgbotapi.NewMessage(telegramChatId, msg)
+		bot.Send(sendMsg)
+	case "Disconnected":
+		msg := fmt.Sprintf("\nClient Disconnected:\n\tDate: %s \n\tHostname: %s \n\tIp: %s", time.Now().Format("2006-01-02 15:04:05"), cI.host, cI.ip)
+		sendMsg := tgbotapi.NewMessage(telegramChatId, msg)
+		bot.Send(sendMsg)
+	}
+		
 }
